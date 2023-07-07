@@ -5,5 +5,9 @@ members = [
     'runtime',
 ]
 
+exclude = [
+    "verifier", "flipper"
+]
+
 [profile.release]
 panic = 'unwind'
