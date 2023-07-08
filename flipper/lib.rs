@@ -1,44 +1,57 @@
 #![cfg_attr(not(feature = "std"), no_std, no_main)]
 
+pub mod proof;
+
 #[ink::contract]
 mod flipper {
-	use risc0_zkvm;
-	/// Defines the storage of your contract.
-	/// Add new fields to the below struct in order
-	/// to add new static storage fields to your contract.
+	use crate::proof::get_proof;
+    use ink::prelude::{
+        vec,
+        vec::Vec,
+    };
+	use risc0_zkvm::{serde::from_slice, SessionReceipt};
+	use scale::Decode;
+	// /// Defines the storage of your contract.
+	// /// Add new fields to the below struct in order
+	// /// to add new static storage fields to your contract.
 	#[ink(storage)]
 	pub struct Flipper {
 		/// Stores a single `bool` value on the storage.
 		value: bool,
 	}
-
+	
 	impl Flipper {
 		/// Constructor that initializes the `bool` value to the given `init_value`.
 		#[ink(constructor)]
-		pub fn new(init_value: bool) -> Self {
-			Self { value: init_value }
+		pub fn new() -> Self {
+			Self { value: false  }
 		}
 
 		/// Constructor that initializes the `bool` value to `false`.
 		///
 		/// Constructors can delegate to other constructors.
-		#[ink(constructor)]
-		pub fn default() -> Self {
-			Self::new(Default::default())
-		}
+		// #[ink(constructor)]
+		// pub fn default() -> Self {
+		// 	Self::new(Default::default())
+		// }
 
 		/// A message that can be called on instantiated contracts.
 		/// This one flips the value of the stored `bool` from `true`
 		/// to `false` and vice versa.
 		#[ink(message)]
-		pub fn flip(&mut self) {
-			self.value = !self.value;
-		}
+		pub fn flip(&mut self, proof_bytes: Vec<u8>) {
+			// self.value = !self.value;
+			let receipt_scale_encoded = get_proof();
 
-		/// Simply returns the current value of our `bool`.
-		#[ink(message)]
-		pub fn get(&self) -> bool {
-			self.value
+			// Known image id for the current prover code
+			let image_id: [u32; 8] = [4267179934, 1034367028, 3427761021, 2146193655, 597755881, 1756247361, 1518155569, 211600594];
+
+			let receipt: SessionReceipt = from_slice(
+				&Vec::<u32>::decode(&mut &receipt_scale_encoded[..]).unwrap()
+			).unwrap();
+
+			receipt.verify(image_id);
+
 		}
 	}
 
@@ -62,7 +75,10 @@ mod flipper {
 		fn it_works() {
 			let mut flipper = Flipper::new(false);
 			assert_eq!(flipper.get(), false);
-			flipper.flip();
+
+			let receipt = vec![];
+
+			flipper.flip(receipt);
 			assert_eq!(flipper.get(), true);
 		}
 	}
