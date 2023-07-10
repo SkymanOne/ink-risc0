@@ -36,8 +36,8 @@ mod flipper {
 		pub fn flip(&mut self, proof_bytes: Vec<u8>) {
 			// Known image id for the current prover code
 			let image_id: [u32; 8] = [
-				4267179934, 1034367028, 3427761021, 2146193655, 597755881, 1756247361, 1518155569,
-				211600594,
+				3551133925, 2234817314, 2371648417, 2966256475, 711591402, 3149304623, 1597102258,
+				534273939,
 			];
 
 			if let Ok(scale_decoded_receipt) = &Vec::<u32>::decode(&mut &proof_bytes[..]) {
