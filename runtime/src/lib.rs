@@ -378,7 +378,7 @@ impl pallet_contracts::Config for Runtime {
 	// if a too-large contract is uploaded. We noticed that it poses
 	// less friction during development when the requirement here is
 	// just more lax.
-	type MaxCodeLen = ConstU32<{ 256 * 1024 }>;
+	type MaxCodeLen = ConstU32<{ 256 * 5024 }>;
 	type DefaultDepositLimit = DefaultDepositLimit;
 	type MaxStorageKeyLen = ConstU32<128>;
 	type MaxDebugBufferLen = ConstU32<{ 2 * 1024 * 1024 }>;

@@ -1,14 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std, no_main)]
 
-pub mod proof;
-
 #[ink::contract]
 mod flipper {
-	use crate::proof::get_proof;
-    use ink::prelude::{
-        vec,
-        vec::Vec,
-    };
+	use ink::prelude::{vec, vec::Vec};
 	use risc0_zkvm::{serde::from_slice, SessionReceipt};
 	use scale::Decode;
 	// /// Defines the storage of your contract.
@@ -19,12 +13,12 @@ mod flipper {
 		/// Stores a single `bool` value on the storage.
 		value: bool,
 	}
-	
+
 	impl Flipper {
 		/// Constructor that initializes the `bool` value to the given `init_value`.
 		#[ink(constructor)]
 		pub fn new() -> Self {
-			Self { value: false  }
+			Self { value: false }
 		}
 
 		/// Constructor that initializes the `bool` value to `false`.
@@ -40,18 +34,20 @@ mod flipper {
 		/// to `false` and vice versa.
 		#[ink(message)]
 		pub fn flip(&mut self, proof_bytes: Vec<u8>) {
-			// self.value = !self.value;
-			let receipt_scale_encoded = get_proof();
-
 			// Known image id for the current prover code
-			let image_id: [u32; 8] = [4267179934, 1034367028, 3427761021, 2146193655, 597755881, 1756247361, 1518155569, 211600594];
+			let image_id: [u32; 8] = [
+				4267179934, 1034367028, 3427761021, 2146193655, 597755881, 1756247361, 1518155569,
+				211600594,
+			];
 
-			let receipt: SessionReceipt = from_slice(
-				&Vec::<u32>::decode(&mut &receipt_scale_encoded[..]).unwrap()
-			).unwrap();
+			if let Ok(scale_decoded_receipt) = &Vec::<u32>::decode(&mut &proof_bytes[..]) {
+				let receipt: Result<SessionReceipt, _> = from_slice(&scale_decoded_receipt);
 
-			receipt.verify(image_id);
-
+				if let Ok(receipt) = receipt {
+					// Check verification of proof
+					receipt.verify(image_id);
+				}
+			}
 		}
 	}
 

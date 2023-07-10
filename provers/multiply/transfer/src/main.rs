@@ -14,11 +14,11 @@
 
 use methods::{MULTIPLY_ELF, MULTIPLY_ID};
 
+use clap::Parser;
 use codec::{Decode, Encode};
-use risc0_zkvm::{
-	serde::{serde::Deserialize, to_vec},
-	Executor, ExecutorEnv, SegmentReceipt, SessionReceipt,
-};
+use risc0_zkvm::serde::from_slice;
+use risc0_zkvm::{serde::to_vec, Executor, ExecutorEnv, SegmentReceipt, SessionReceipt};
+use sp_core::blake2_256;
 use std::{str::FromStr, time::Instant};
 use subxt::{
 	config::WithExtrinsicParams,
@@ -64,27 +64,28 @@ async fn send_receipt(
 	Error,
 > {
 	let receipt_scale_encoded = to_vec(receipt).unwrap().encode();
+	let receipt_recreated: SessionReceipt =
+		from_slice(&Vec::<u32>::decode(&mut &receipt_scale_encoded[..]).unwrap()).unwrap();
 
-	// let receipt_recreated = SessionReceipt::from(Vec::<u32>::decode(receipt_scale_encoded));
-	let receipt_recreated =
-		SessionReceipt::deserialize(Vec::<u32>::decode(&mut &receipt_scale_encoded[..]).unwrap());
-
+	// If fails, the contract won't be able to verify the proof. If passed, all should be good for the contract to verify it
 	assert_eq!(receipt_recreated, receipt.clone());
+
+	let mut call_data = Vec::<u8>::new();
+	//append the selector
+	call_data.append(&mut (&blake2_256("flip".as_bytes())[0..4]).to_vec());
+	//append the arguments
+	call_data.append(&mut to_vec(receipt).unwrap().encode());
 
 	let call_tx = substrate_node::tx().contracts().call(
 		// MultiAddress::Id(contract)
 		contract.into(),
-		0,                                                        // value
+		0, // value
+		// Both need checking, or values from estimates
 		Weight { ref_time: 500_000_000, proof_size: PROOF_SIZE }, // gas_limit
 		None,                                                     // storage_deposit_limit
-		// input_data,
-		// (substrate_session_receipt, receipt.journal),
-
 		// To zkvm's serialization, then to SCALE encoding
-		to_vec(receipt).unwrap().encode(),
+		call_data,
 	);
-
-	// let call_tx = substrate_node::tx().assets().call();
 
 	let api = OnlineClient::<PolkadotConfig>::new().await.unwrap();
 
@@ -122,12 +123,24 @@ pub fn multiply_factors(a: u64, b: u64) -> SessionReceipt {
 	receipt
 }
 
+/// Simple program to greet a person
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+	/// Contract address
+	#[arg(short, long)]
+	contract_address: String,
+}
+
 #[tokio::main]
 async fn main() {
+	let args = Args::parse();
 	// Pick two numbers
 	let receipt = multiply_factors(17, 23);
 
-	let contract_account = AccountId32::from_str("0x00000000000000000").unwrap();
+	let contract_account = AccountId32::from_str(&args.contract_address).unwrap();
+
+	println!("With IMAGE_ID {:?}. Ensure that this is up-to-date in the contract", MULTIPLY_ID);
 
 	// Verify receipt, panic if it's wrong
 	receipt.verify(MULTIPLY_ID).expect(
