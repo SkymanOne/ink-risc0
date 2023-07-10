@@ -80,9 +80,9 @@ async fn send_receipt(
 		// MultiAddress::Id(contract)
 		contract.into(),
 		0, // value
-		// Both need checking, or values from estimates
-		Weight { ref_time: 500_000_000, proof_size: PROOF_SIZE }, // gas_limit
-		None,                                                     // storage_deposit_limit
+		// Both need checking, or values from estimates. These ones come from contracts ui
+		Weight { ref_time: 142516846, proof_size: 16689 }, // gas_limit
+		None,                                              // storage_deposit_limit
 		// To zkvm's serialization, then to SCALE encoding
 		call_data,
 	);
@@ -99,7 +99,7 @@ async fn send_receipt(
 
 	let result = api.tx().sign_and_submit_then_watch_default(&call_tx, &signer).await?;
 
-	println!("Call result: {:?}", result);
+	// println!("Call result: {:?}", result);
 	Ok(result)
 }
 

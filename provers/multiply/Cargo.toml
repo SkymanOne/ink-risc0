@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "transfer",
+    "multiply",
     "methods",
 ]
