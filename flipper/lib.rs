@@ -33,21 +33,22 @@ mod flipper {
 		/// This one flips the value of the stored `bool` from `true`
 		/// to `false` and vice versa.
 		#[ink(message)]
-		pub fn flip(&mut self, proof_bytes: Vec<u8>) {
+		// pub fn flip(&mut self, proof_bytes: Vec<u8>) {
+		pub fn flip(&mut self, scale_decoded_receipt: Vec<u32>) {
 			// Known image id for the current prover code
 			let image_id: [u32; 8] = [
 				3551133925, 2234817314, 2371648417, 2966256475, 711591402, 3149304623, 1597102258,
 				534273939,
 			];
 
-			if let Ok(scale_decoded_receipt) = &Vec::<u32>::decode(&mut &proof_bytes[..]) {
-				let receipt: Result<SessionReceipt, _> = from_slice(&scale_decoded_receipt);
+			// if let Ok(scale_decoded_receipt) = &Vec::<u32>::decode(&mut &proof_bytes[..]) {
+			let receipt: Result<SessionReceipt, _> = from_slice(&scale_decoded_receipt);
 
-				if let Ok(receipt) = receipt {
-					// Check verification of proof
-					receipt.verify(image_id);
-				}
+			if let Ok(receipt) = receipt {
+				// Check verification of proof
+				receipt.verify(image_id);
 			}
+			// }
 		}
 	}
 
