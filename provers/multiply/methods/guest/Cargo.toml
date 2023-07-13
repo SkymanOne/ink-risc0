@@ -1,13 +1,12 @@
 [package]
-name = "methods-guest"
+name = "multiply"
 version = "0.1.0"
 edition = "2021"
 
 [workspace]
 
 [build-dependencies]
-risc0-build = { version = "0.15.3" } 
+risc0-build = { version = "0.16.1" }
 
 [dependencies]
-risc0-zkvm = { default-features = false, version = "0.15.3", features = ["std"] }
-sp-std = { version = "5.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.39" }
+risc0-zkvm = { version = "0.16.1", default-features = false }

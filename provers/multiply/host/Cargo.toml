@@ -5,8 +5,7 @@ edition = "2021"
 
 [dependencies]
 methods = { path = "../methods" }
-risc0-zkvm = "0.15.3"
-
+risc0-zkvm = { version = "0.16.1" }
 serde = "1.0"
 tokio = { version = "1", features = ["full"] }
 subxt = { version = "0.25.0" }
@@ -15,3 +14,6 @@ sp-core = { version = "7.0.0", git = "https://github.com/paritytech/substrate.gi
 array-bytes = "6.1.0"
 clap = { version = "4.2.7", features = ["derive"] }
 serde_json = "1.0.96"
+
+[features]
+metal = ["risc0-zkvm/metal"]

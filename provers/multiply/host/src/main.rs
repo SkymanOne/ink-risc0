@@ -14,13 +14,19 @@
 
 use methods::{MULTIPLY_ELF, MULTIPLY_ID};
 
+use risc0_zkvm::SessionReceipt;
+use risc0_zkvm::{
+    default_executor_from_elf,
+    serde::{from_slice, to_vec},
+    ExecutorEnv,
+};
+
 use clap::Parser;
 use codec::{Decode, Encode};
-use risc0_zkvm::serde::from_slice;
-use risc0_zkvm::{serde::to_vec, Executor, ExecutorEnv, SegmentReceipt, SessionReceipt};
 use sp_core::blake2_256;
 use std::{str::FromStr, time::Instant};
 use subxt::{
+	blocks::ExtrinsicEvents,
 	config::WithExtrinsicParams,
 	ext::{
 		sp_core::{
@@ -55,11 +61,8 @@ async fn send_receipt(
 	receipt: &SessionReceipt,
 	// ) -> Result<TxProgress<SubstrateConfig, OnlineClient<SubstrateConfig>>, Error> {
 ) -> Result<
-	TxProgress<
+	ExtrinsicEvents<
 		WithExtrinsicParams<SubstrateConfig, BaseExtrinsicParams<SubstrateConfig, PlainTip>>,
-		OnlineClient<
-			WithExtrinsicParams<SubstrateConfig, BaseExtrinsicParams<SubstrateConfig, PlainTip>>,
-		>,
 	>,
 	Error,
 > {
@@ -67,6 +70,7 @@ async fn send_receipt(
 	let receipt_recreated: SessionReceipt =
 		from_slice(&Vec::<u32>::decode(&mut &receipt_scale_encoded[..]).unwrap()).unwrap();
 
+<<<<<<< HEAD:provers/multiply/multiply/src/main.rs
 	// if let Ok(scale_decoded_receipt) = &Vec::<u32>::decode(&mut &proof_bytes[..]) {
 	// 	let receipt: Result<SessionReceipt, _> = from_slice(&scale_decoded_receipt);
 
@@ -75,13 +79,16 @@ async fn send_receipt(
 	// 		receipt.verify(image_id);
 	// 	}
 	// }
+=======
+	println!("Vec: {:?}", to_vec(receipt));
+>>>>>>> 130a970 (update to risc0 to 0.16.1):provers/multiply/host/src/main.rs
 
 	// If fails, the contract won't be able to verify the proof. If passed, all should be good for the contract to verify it
-	assert_eq!(receipt_recreated, receipt.clone());
+	assert_eq!(&receipt_recreated, receipt.clone());
 
 	let mut call_data = Vec::<u8>::new();
 	//append the selector
-	call_data.append(&mut (&blake2_256("flip".as_bytes())[0..4]).to_vec());
+	call_data.append(&mut (blake2_256("accept".as_bytes())[0..4]).to_vec());
 	//append the arguments
 	call_data.append(&mut to_vec(receipt).unwrap().encode());
 
@@ -90,8 +97,8 @@ async fn send_receipt(
 		contract.into(),
 		0, // value
 		// Both need checking, or values from estimates. These ones come from contracts ui
-		Weight { ref_time: 142516846, proof_size: 16689 }, // gas_limit
-		None,                                              // storage_deposit_limit
+		Weight { ref_time: 109_106_502_144, proof_size: 104_898_144 }, // gas_limit
+		None,                                                  // storage_deposit_limit
 		// To zkvm's serialization, then to SCALE encoding
 		call_data,
 	);
@@ -106,30 +113,44 @@ async fn send_receipt(
 	.unwrap();
 	let signer = PairSigner::new(restored_key);
 
-	let result = api.tx().sign_and_submit_then_watch_default(&call_tx, &signer).await?;
+	let result = api
+		.tx()
+		.sign_and_submit_then_watch_default(&call_tx, &signer)
+		.await?
+		.wait_for_in_block()
+		.await?
+		.fetch_events()
+		.await?;
 
 	// println!("Call result: {:?}", result);
 	Ok(result)
 }
 
 // Multiply them inside the ZKP
-pub fn multiply_factors(a: u64, b: u64) -> SessionReceipt {
-	let env = ExecutorEnv::builder()
-		// Send a & b to the guest
-		.add_input(&to_vec(&a).unwrap())
-		.add_input(&to_vec(&b).unwrap())
-		.build();
-	// .unwrap();
+pub fn multiply_factors(a: u64, b: u64) -> (SessionReceipt, u64) {
+    let env = ExecutorEnv::builder()
+        // Send a & b to the guest
+        .add_input(&to_vec(&a).unwrap())
+        .add_input(&to_vec(&b).unwrap())
+        .build()
+        .unwrap();
 
-	// First, we make an executor, loading the 'multiply' ELF binary.
-	let mut exec = Executor::from_elf(env, MULTIPLY_ELF).unwrap();
+    // First, we make an executor, loading the 'multiply' ELF binary.
+    let mut exec = default_executor_from_elf(env, MULTIPLY_ELF).unwrap();
 
-	// Run the executor to produce a session.
-	let session = exec.run().unwrap();
+    // Run the executor to produce a session.
+    let session = exec.run().unwrap();
 
-	// Prove the session to produce a receipt.
-	let receipt = session.prove().unwrap();
-	receipt
+    // Prove the session to produce a receipt.
+    let receipt = session.prove().unwrap();
+
+    // Extract journal of receipt (i.e. output c, where c = a * b)
+    let c: u64 = from_slice(&receipt.journal).expect(
+        "Journal output should deserialize into the same types (& order) that it was written",
+    );
+
+
+    (receipt, c)
 }
 
 /// Simple program to greet a person
@@ -145,16 +166,20 @@ struct Args {
 async fn main() {
 	let args = Args::parse();
 	// Pick two numbers
-	let receipt = multiply_factors(17, 23);
+	let (receipt, _) = multiply_factors(17, 23);
+	// println!("Receipt size: {}", to_vec(&receipt).unwrap().len());
 
 	let contract_account = AccountId32::from_str(&args.contract_address).unwrap();
 
-	println!("With IMAGE_ID {:?}. Ensure that this is up-to-date in the contract", MULTIPLY_ID);
+	// println!("With IMAGE_ID {:?}. Ensure that this is up-to-date in the contract", MULTIPLY_ID);
 
 	// Verify receipt, panic if it's wrong
 	receipt.verify(MULTIPLY_ID).expect(
 		"Code you have proven should successfully verify; did you specify the correct image ID?",
 	);
+	println!("Vec: {:?}", to_vec(&receipt));
 
-	send_receipt(contract_account, &receipt).await;
+	// let res = send_receipt(contract_account, &receipt).await;
+	// println!("Result: {}", res.is_ok());
+	// println!("{:#?}", res);
 }
