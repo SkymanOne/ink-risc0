@@ -46,30 +46,12 @@ mod flipper {
 			// return Ok(proof_bytes.len() as u32);
 			let receipt: Result<SessionReceipt, _> = from_slice(&(proof_bytes as Vec<u32>));
 
-			// if let Ok(scale_decoded_receipt) = &Vec::<u32>::decode(&mut &proof_bytes[..]) {
-			let receipt: Result<SessionReceipt, _> = from_slice(&scale_decoded_receipt);
-
 			if let Ok(receipt) = receipt {
 				// Check verification of proof
 				receipt.verify(image_id);
+				return Ok(0);
 			}
-			// }
-		}
-	}
-
-	/// Unit tests in Rust are normally defined within such a `#[cfg(test)]`
-	/// module and test functions are marked with a `#[test]` attribute.
-	/// The below code is technically just normal Rust code.
-	#[cfg(test)]
-	mod tests {
-		/// Imports all the definitions from the outer scope so we can use them here.
-		use super::*;
-
-		/// We test if the default constructor does its job.
-		#[ink::test]
-		fn default_works() {
-			let flipper = Flipper::default();
-			assert_eq!(flipper.get(), false);
+			Err(())
 		}
 
 		#[ink(message)]
