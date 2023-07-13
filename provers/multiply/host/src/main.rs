@@ -70,7 +70,6 @@ async fn send_receipt(
 	let receipt_recreated: SessionReceipt =
 		from_slice(&Vec::<u32>::decode(&mut &receipt_scale_encoded[..]).unwrap()).unwrap();
 
-<<<<<<< HEAD:provers/multiply/multiply/src/main.rs
 	// if let Ok(scale_decoded_receipt) = &Vec::<u32>::decode(&mut &proof_bytes[..]) {
 	// 	let receipt: Result<SessionReceipt, _> = from_slice(&scale_decoded_receipt);
 
@@ -79,9 +78,7 @@ async fn send_receipt(
 	// 		receipt.verify(image_id);
 	// 	}
 	// }
-=======
 	println!("Vec: {:?}", to_vec(receipt));
->>>>>>> 130a970 (update to risc0 to 0.16.1):provers/multiply/host/src/main.rs
 
 	// If fails, the contract won't be able to verify the proof. If passed, all should be good for the contract to verify it
 	assert_eq!(&receipt_recreated, receipt.clone());
