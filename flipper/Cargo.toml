@@ -9,7 +9,7 @@ ink = { path = "/Users/skyman/Projects/ink/crates/ink", default-features = false
 
 scale = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
 scale-info = { version = "2.6", default-features = false, features = ["derive"], optional = true }
-risc0-zkvm = { default-features = false, version = "0.16.0" }
+risc0-zkvm = { default-features = false, path = "/Users/skyman/Projects/risc0/risc0/zkvm" }
 
 [dev-dependencies]
 ink_e2e = "4.2.0"
@@ -23,6 +23,7 @@ std = [
     "ink/std",
     "scale/std",
     "scale-info/std",
+	"risc0-zkvm/std",
 ]
 ink-as-dependency = []
 e2e-tests = []

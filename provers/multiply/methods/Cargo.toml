@@ -4,7 +4,7 @@ name = "methods"
 version = "0.1.0"
 
 [build-dependencies]
-risc0-build = {version = "0.16.1"}
+risc0-build = {version = "=0.15.3"}
 
 [package.metadata.risc0]
 methods = ["guest"]

@@ -14,11 +14,9 @@
 
 use methods::{MULTIPLY_ELF, MULTIPLY_ID};
 
-use risc0_zkvm::SessionReceipt;
 use risc0_zkvm::{
-    default_executor_from_elf,
     serde::{from_slice, to_vec},
-    ExecutorEnv,
+    Executor, ExecutorEnv, SessionReceipt,
 };
 
 use clap::Parser;
@@ -78,14 +76,14 @@ async fn send_receipt(
 	// 		receipt.verify(image_id);
 	// 	}
 	// }
-	println!("Vec: {:?}", to_vec(receipt));
+	// println!("Vec: {:?}", to_vec(receipt));
 
 	// If fails, the contract won't be able to verify the proof. If passed, all should be good for the contract to verify it
-	assert_eq!(&receipt_recreated, receipt.clone());
+	assert_eq!(&receipt_recreated, receipt);
 
 	let mut call_data = Vec::<u8>::new();
 	//append the selector
-	call_data.append(&mut (blake2_256("accept".as_bytes())[0..4]).to_vec());
+	call_data.append(&mut (blake2_256("flip".as_bytes())[0..4]).to_vec());
 	//append the arguments
 	call_data.append(&mut to_vec(receipt).unwrap().encode());
 
@@ -94,7 +92,7 @@ async fn send_receipt(
 		contract.into(),
 		0, // value
 		// Both need checking, or values from estimates. These ones come from contracts ui
-		Weight { ref_time: 109_106_502_144, proof_size: 104_898_144 }, // gas_limit
+		Weight { ref_time: 209_106_502_144, proof_size: 204_898_144 }, // gas_limit
 		None,                                                  // storage_deposit_limit
 		// To zkvm's serialization, then to SCALE encoding
 		call_data,
@@ -129,11 +127,10 @@ pub fn multiply_factors(a: u64, b: u64) -> (SessionReceipt, u64) {
         // Send a & b to the guest
         .add_input(&to_vec(&a).unwrap())
         .add_input(&to_vec(&b).unwrap())
-        .build()
-        .unwrap();
+        .build();
 
     // First, we make an executor, loading the 'multiply' ELF binary.
-    let mut exec = default_executor_from_elf(env, MULTIPLY_ELF).unwrap();
+    let mut exec = Executor::from_elf(env, MULTIPLY_ELF).unwrap();
 
     // Run the executor to produce a session.
     let session = exec.run().unwrap();
@@ -146,6 +143,8 @@ pub fn multiply_factors(a: u64, b: u64) -> (SessionReceipt, u64) {
         "Journal output should deserialize into the same types (& order) that it was written",
     );
 
+    // Report the product
+    // println!("I know the factors of {}, and I can prove it!", c);
 
     (receipt, c)
 }
@@ -174,9 +173,15 @@ async fn main() {
 	receipt.verify(MULTIPLY_ID).expect(
 		"Code you have proven should successfully verify; did you specify the correct image ID?",
 	);
-	println!("Vec: {:?}", to_vec(&receipt));
 
-	// let res = send_receipt(contract_account, &receipt).await;
+	let r_vec = to_vec(&receipt).unwrap();
+	let receipt2: Result<SessionReceipt, _> = from_slice(&r_vec);
+	let receipt2 = receipt2.unwrap();
+
+	assert_eq!(receipt, receipt2);
+	println!("{:?}", r_vec);
+
+	let res = send_receipt(contract_account, &receipt).await;
 	// println!("Result: {}", res.is_ok());
 	// println!("{:#?}", res);
 }

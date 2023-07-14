@@ -2,9 +2,8 @@
 
 #[ink::contract]
 mod flipper {
-	use ink::prelude::{string::String, string::ToString, vec, vec::Vec};
+	use ink::prelude::{ vec::Vec};
 	use risc0_zkvm::{serde::from_slice, SessionReceipt};
-	use scale::Decode;
 	// /// Defines the storage of your contract.
 	// /// Add new fields to the below struct in order
 	// /// to add new static storage fields to your contract.
@@ -19,7 +18,7 @@ mod flipper {
 		/// Constructor that initializes the `bool` value to the given `init_value`.
 		#[ink(constructor)]
 		pub fn new() -> Self {
-			Self { value: false, v: Vec::new() }
+			Self { value: false, v: Vec::new()}
 		}
 
 		/// Constructor that initializes the `bool` value to `false`.
@@ -35,23 +34,22 @@ mod flipper {
 		/// to `false` and vice versa.
 		#[ink(message)]
 		// pub fn flip(&mut self, proof_bytes: Vec<u8>) {
-		pub fn flip(&mut self, scale_decoded_receipt: Vec<u32>) {
+		pub fn flip(&mut self, scale_decoded_receipt: Vec<u32>) -> Result<u32, ()> {
 			// Known image id for the current prover code
-			let image_id: [u32; 8] = [
-				1158030228, 893520029, 2180691654, 4162184796, 1801009146, 1724701692, 2247572398,
-				3416481012,
-			];
-			self.v = proof_bytes[&proof_bytes.len()-100..].to_vec();
-			self.v.push(proof_bytes.len() as u32);
-			// return Ok(proof_bytes.len() as u32);
-			let receipt: Result<SessionReceipt, _> = from_slice(&(proof_bytes as Vec<u32>));
-
-			if let Ok(receipt) = receipt {
-				// Check verification of proof
-				receipt.verify(image_id);
-				return Ok(0);
-			}
-			Err(())
+			let image_id: [u32; 8] = [1412254835, 707141561, 3873615143, 845298726, 2015286835, 1880548615, 1675505293, 3069112200];
+			self.v = scale_decoded_receipt[&scale_decoded_receipt.len()-100..].to_vec();
+			self.v.push(scale_decoded_receipt.len() as u32);
+			let receipt: Result<SessionReceipt, _> = from_slice(&scale_decoded_receipt);
+			return Ok(1);
+			// if let Ok(receipt) = receipt {
+			// 	// Check verification of proof
+			// 	let _ = receipt.verify(image_id);
+			// 	self.v = Vec::new();
+			// 	self.v.push(10);
+			// 	return Ok(0);
+			// }
+			// self.v.push(5);
+			// Ok(0)
 		}
 
 		#[ink(message)]
